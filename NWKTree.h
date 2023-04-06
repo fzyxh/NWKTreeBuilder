@@ -47,17 +47,51 @@ public:
         this->length = lengt;
     }
     void add_clade_at_tail(Node *new_clade){
+        // diff from add son!!!
         if(!new_clade)return;
         new_clade->set_nex(this->nex);
         this->nex=new_clade;
     }
     void rm_nex_clade(Node *pre, Node *del_clade){
-        if(del_clade == this->son){
+        if(del_clade->get_name() == this->son->get_name()){
             this->son = del_clade->get_nex();
             delete del_clade;
             return;
         }
+        assert(pre);
         pre->set_nex(del_clade->get_nex());
+        delete del_clade;// dangerous behavior
+    }
+    void rm_only_nex_clade(Node *pre, Node *del_clade){
+        if(del_clade->get_name() == this->son->get_name()){
+            this->son = del_clade->get_nex();
+            Node *nex = nullptr, *tmp = nullptr;
+            for(nex = del_clade->get_son();nex;){
+                tmp = nex;
+                nex = nex->get_nex();
+                if(this->son)
+                    this->son->add_clade_at_tail(tmp);
+                else{
+                    this->son = tmp;
+                    break;
+                }
+            }
+            delete del_clade;
+            return;
+        }
+        assert(pre);
+        pre->set_nex(del_clade->get_nex());
+        Node *nex = nullptr, *tmp = nullptr;
+        for(nex = del_clade->get_son();nex;){
+            tmp = nex;
+            nex = nex->get_nex();
+            if(this->son)
+                this->son->add_clade_at_tail(tmp);
+            else{
+                this->son = tmp;
+                break;
+            }
+        }
         delete del_clade;// dangerous behavior
     }
 };
@@ -93,29 +127,6 @@ private:
         Node *node = new Node(std::move(name),length);
         return node;
     }
-public:
-    int from_file(const std::string& file_name){
-        this->infile.open(file_name);
-        if (!this->infile.is_open()) {
-            std::cerr << "Could not open the file - '"
-                 << file_name << "'" << std::endl;
-            return EXIT_FAILURE;
-        }
-        return 0;
-    }
-    int to_file(const std::string& file_name){
-        this->outfile.open(file_name);
-        if (!this->outfile.is_open()) {
-            std::cerr << "Could not open the file - '"
-                 << file_name << "'" << std::endl;
-            return EXIT_FAILURE;
-        }
-        this->write_dfs(this->root);
-        outfile.close();
-        return 0;
-    }
-    Node get_root(){return *this->root;}
-    Node* get_real_root(){return this->root;}
     Node* dfs_file(){
         Node *node = NwkTree::get_new();
         char ch = this->get_buf();
@@ -154,6 +165,29 @@ public:
         }
         return node;
     }
+public:
+    int from_file(const std::string& file_name){
+        this->infile.open(file_name);
+        if (!this->infile.is_open()) {
+            std::cerr << "Could not open the file - '"
+                 << file_name << "'" << std::endl;
+            return EXIT_FAILURE;
+        }
+        return 0;
+    }
+    int to_file(const std::string& file_name){
+        this->outfile.open(file_name);
+        if (!this->outfile.is_open()) {
+            std::cerr << "Could not open the file - '"
+                 << file_name << "'" << std::endl;
+            return EXIT_FAILURE;
+        }
+        this->write_dfs(this->root);
+        outfile.close();
+        return 0;
+    }
+    Node get_root(){return *this->root;}
+    Node* get_real_root(){return this->root;}
     void build_tree(){
         root = dfs_file();
         if(root->get_name().empty())root->set_name("root");
